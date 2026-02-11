@@ -1,8 +1,10 @@
 import prisma from '../config/database';
-import { Gender } from '@prisma/client';
+// import { Gender } from '@prisma/client';
 import { hashPassword, comparePassword } from '../utils/hash.util';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.util';
 import logger from '../config/logger';
+
+import { Gender, SmokingPreference, DrinkingPreference, PetsPreference, SleepSchedule, Cleanliness } from '@prisma/client';
 
 /** Fields returned in API responses (never includes passwordHash) */
 const USER_SELECT = {
@@ -15,13 +17,50 @@ const USER_SELECT = {
   gender: true,
   city: true,
   bio: true,
-  photoUrl: true,
+  occupation: true,
+  smokingPreference: true,
+  drinkingPreference: true,
+  petsPreference: true,
+  sleepSchedule: true,
+  cleanliness: true,
+  budgetMin: true,
+  budgetMax: true,
+  preferredRadius: true,
+  interests: true,
+  languages: true,
+  profilePhoto: true,
+  additionalPhotos: true,
   emailVerified: true,
   phoneVerified: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
   lastLoginAt: true,
+} as const;
+
+/** Public profile fields (excludes email, phone, and verification status) */
+const PUBLIC_USER_SELECT = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  age: true,
+  gender: true,
+  city: true,
+  bio: true,
+  occupation: true,
+  smokingPreference: true,
+  drinkingPreference: true,
+  petsPreference: true,
+  sleepSchedule: true,
+  cleanliness: true,
+  budgetMin: true,
+  budgetMax: true,
+  preferredRadius: true,
+  interests: true,
+  languages: true,
+  profilePhoto: true,
+  additionalPhotos: true,
+  createdAt: true,
 } as const;
 
 export class AuthService {
@@ -216,7 +255,19 @@ export class AuthService {
       gender?: Gender;
       city?: string;
       bio?: string;
-      photoUrl?: string;
+      occupation?: string;
+      smokingPreference?: SmokingPreference;
+      drinkingPreference?: DrinkingPreference;
+      petsPreference?: PetsPreference;
+      sleepSchedule?: SleepSchedule;
+      cleanliness?: Cleanliness;
+      budgetMin?: number;
+      budgetMax?: number;
+      preferredRadius?: number;
+      interests?: string[];
+      languages?: string[];
+      profilePhoto?: string;
+      additionalPhotos?: string[];
     }
   ) {
     const user = await prisma.user.update({
@@ -226,6 +277,31 @@ export class AuthService {
     });
 
     logger.info(`Profile updated for user: ${userId}`);
+
+    return user;
+  }
+
+  /**
+   * Get public profile by user ID.
+   * Excludes sensitive information like email, phone, and verification status.
+   */
+  async getPublicProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: PUBLIC_USER_SELECT,
+    });
+
+    if (!user) {
+      const error = new Error('User not found') as Error & { statusCode: number };
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (!user) {
+      const error = new Error('User profile is not available') as Error & { statusCode: number };
+      error.statusCode = 404;
+      throw error;
+    }
 
     return user;
   }

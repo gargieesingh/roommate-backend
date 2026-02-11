@@ -134,4 +134,19 @@ export class AuthController {
       next(error);
     }
   }
+
+  /** GET /api/v1/auth/profile/:userId */
+  async getPublicProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.params.userId as string;
+      const user = await authService.getPublicProfile(userId);
+
+      res.json({
+        success: true,
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -11,6 +11,7 @@ import {
   refreshTokenSchema,
   logoutSchema,
   updateProfileSchema,
+  userIdParamSchema,
 } from '../validators/auth.validator';
 
 const router = Router();
@@ -70,6 +71,13 @@ router.put(
   authenticate,
   validate(updateProfileSchema),
   authController.updateProfile.bind(authController)
+);
+
+// ─── Public profile view ────────────────────────────────────────
+router.get(
+  '/profile/:userId',
+  validate(userIdParamSchema),
+  authController.getPublicProfile.bind(authController)
 );
 
 export default router;
