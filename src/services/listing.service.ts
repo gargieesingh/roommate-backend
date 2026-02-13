@@ -274,8 +274,9 @@ export class ListingService {
     // Rent range filter
     if (minRent || maxRent) {
       where.rent = {};
-      if (minRent) where.rent.gte = minRent;
-      if (maxRent) where.rent.lte = maxRent;
+      // Convert to numbers if they're strings
+      if (minRent) where.rent.gte = typeof minRent === 'string' ? parseInt(minRent, 10) : minRent;
+      if (maxRent) where.rent.lte = typeof maxRent === 'string' ? parseInt(maxRent, 10) : maxRent;
     }
 
     // Available from filter
