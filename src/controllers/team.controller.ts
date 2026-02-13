@@ -39,7 +39,7 @@ export class TeamController {
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const team = await teamService.getTeamById(id);
+      const team = await teamService.getTeamById(id as string);
 
       res.json({
         success: true,
@@ -55,7 +55,7 @@ export class TeamController {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;
-      const team = await teamService.updateTeam(id, userId, req.body);
+      const team = await teamService.updateTeam(id as string, userId, req.body);
 
       res.json({
         success: true,
@@ -72,7 +72,7 @@ export class TeamController {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;
-      await teamService.deleteTeam(id, userId);
+      await teamService.deleteTeam(id as string, userId);
 
       res.json({
         success: true,
@@ -88,7 +88,7 @@ export class TeamController {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;
-      const membership = await teamService.joinTeam(id, userId);
+      const membership = await teamService.joinTeam(id as string, userId);
 
       res.json({
         success: true,
@@ -105,7 +105,7 @@ export class TeamController {
     try {
       const { id, userId: memberId } = req.params;
       const leaderId = req.user!.userId;
-      const membership = await teamService.acceptMember(id, leaderId, memberId);
+      const membership = await teamService.acceptMember(id as string, leaderId, memberId as string);
 
       res.json({
         success: true,
@@ -122,7 +122,7 @@ export class TeamController {
     try {
       const { id, userId: memberId } = req.params;
       const leaderId = req.user!.userId;
-      const membership = await teamService.rejectMember(id, leaderId, memberId);
+      const membership = await teamService.rejectMember(id as string, leaderId, memberId as string);
 
       res.json({
         success: true,
@@ -139,7 +139,7 @@ export class TeamController {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;
-      await teamService.leaveTeam(id, userId);
+      await teamService.leaveTeam(id as string, userId);
 
       res.json({
         success: true,

@@ -26,7 +26,7 @@ export class NotificationController {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;
-      const notification = await notificationService.markAsRead(id, userId);
+      const notification = await notificationService.markAsRead(id as string, userId);
 
       if (!notification) {
         throw new AppError('Notification not found', 404);

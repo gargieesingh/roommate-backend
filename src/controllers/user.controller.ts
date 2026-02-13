@@ -26,7 +26,7 @@ export class UserController {
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const user = await userService.getUserById(id);
+      const user = await userService.getUserById(id as string);
 
       if (!user) {
         throw new AppError('User not found', 404);
@@ -46,7 +46,7 @@ export class UserController {
     try {
       const { id: reviewedId } = req.params;
       const reviewerId = req.user!.userId;
-      const review = await reviewService.createReview(reviewerId, reviewedId, req.body);
+      const review = await reviewService.createReview(reviewerId, reviewedId as string, req.body);
 
       res.status(201).json({
         success: true,
@@ -64,7 +64,7 @@ export class UserController {
       const { id } = req.params;
       const { page, limit } = req.query;
       const result = await reviewService.getUserReviews(
-        id,
+        id as string,
         page ? Number(page) : undefined,
         limit ? Number(limit) : undefined
       );
