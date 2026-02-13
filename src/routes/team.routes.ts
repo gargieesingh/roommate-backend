@@ -22,13 +22,6 @@ router.get(
   teamController.search.bind(teamController)
 );
 
-/** GET /api/v1/teams/:id - Get team details */
-router.get(
-  '/:id',
-  validate(teamIdParamSchema),
-  teamController.getById.bind(teamController)
-);
-
 // ─── Protected routes (require valid JWT) ───────────────────
 
 /** POST /api/v1/teams - Create team */
@@ -44,6 +37,13 @@ router.get(
   '/my-teams',
   authenticate,
   teamController.getMyTeams.bind(teamController)
+);
+
+/** GET /api/v1/teams/:id - Get team details */
+router.get(
+  '/:id',
+  validate(teamIdParamSchema),
+  teamController.getById.bind(teamController)
 );
 
 /** PUT /api/v1/teams/:id - Update team */

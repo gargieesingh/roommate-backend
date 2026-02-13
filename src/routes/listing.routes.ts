@@ -22,18 +22,27 @@ router.get(
   listingController.search.bind(listingController)
 );
 
-/** GET /api/v1/listings/:id - Get listing by ID */
-router.get(
-  '/:id',
-  validate(listingIdParamSchema),
-  listingController.getById.bind(listingController)
-);
-
 /** GET /api/v1/listings/user/:userId - Get all listings by a user */
 router.get(
   '/user/:userId',
   validate(userIdListingsParamSchema),
   listingController.getUserListings.bind(listingController)
+);
+
+// ─── Protected routes (require valid JWT) ───────────────────────
+
+/** GET /api/v1/listings/my-listings - Get current user's listings */
+router.get(
+  '/my-listings',
+  authenticate,
+  listingController.getMyListings.bind(listingController)
+);
+
+/** GET /api/v1/listings/:id - Get listing by ID */
+router.get(
+  '/:id',
+  validate(listingIdParamSchema),
+  listingController.getById.bind(listingController)
 );
 
 // ─── Protected routes (require valid JWT) ───────────────────────
@@ -44,13 +53,6 @@ router.post(
   authenticate,
   validate(createListingSchema),
   listingController.create.bind(listingController)
-);
-
-/** GET /api/v1/listings/my-listings - Get current user's listings */
-router.get(
-  '/my-listings',
-  authenticate,
-  listingController.getMyListings.bind(listingController)
 );
 
 /** PUT /api/v1/listings/:id - Update listing */
