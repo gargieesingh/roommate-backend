@@ -37,7 +37,11 @@ export class NotificationService {
    */
   async getNotifications(userId: string, filters: GetNotificationsFilters = {}) {
     const { isRead, page = 1, limit = 20 } = filters;
-    const skip = (page - 1) * limit;
+    
+    // Ensure page and limit are numbers
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
 
     const where: any = { userId };
     if (isRead !== undefined) {
@@ -48,7 +52,7 @@ export class NotificationService {
       prisma.notification.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         orderBy: { createdAt: 'desc' },
       }),
       prisma.notification.count({ where }),
@@ -58,9 +62,9 @@ export class NotificationService {
       notifications,
       pagination: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }

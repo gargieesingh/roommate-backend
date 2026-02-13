@@ -113,7 +113,10 @@ export class MessageService {
    * Get all conversations for a user with last message and unread count
    */
   async getConversations(userId: string, page: number = 1, limit: number = 20) {
-    const skip = (page - 1) * limit;
+    // Ensure page and limit are numbers
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
 
     // Get conversations where user is participant
     const conversations = await prisma.conversation.findMany({
@@ -130,7 +133,7 @@ export class MessageService {
       },
       orderBy: { updatedAt: 'desc' },
       skip,
-      take: limit,
+      take: limitNum,
     });
 
     // Get total count
@@ -163,10 +166,10 @@ export class MessageService {
     return {
       conversations: conversationsWithUnread,
       pagination: {
-        page,
-        limit,
+        page: pageNum,
+        limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }
