@@ -77,7 +77,11 @@ export class TeamService {
    */
   async getTeams(filters: SearchTeamsFilters) {
     const { city, budgetMin, budgetMax, isActive = true, page = 1, limit = 20 } = filters;
-    const skip = (page - 1) * limit;
+    
+    // Ensure page and limit are numbers
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
 
     const where: any = { isActive };
 
@@ -99,7 +103,7 @@ export class TeamService {
       prisma.team.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         include: {
           members: {
             where: { status: TeamMemberStatus.ACCEPTED },
@@ -127,9 +131,9 @@ export class TeamService {
       teams,
       pagination: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }

@@ -41,7 +41,9 @@ export class UserService {
       limit = 20,
     } = filters;
 
-    const skip = (page - 1) * limit;
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
     const where: any = {
       isActive: true,
       emailVerified: true, // Only show verified users
@@ -96,7 +98,7 @@ export class UserService {
       prisma.user.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         select: {
           id: true,
           firstName: true,
@@ -145,9 +147,9 @@ export class UserService {
       users: usersWithRating,
       pagination: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }

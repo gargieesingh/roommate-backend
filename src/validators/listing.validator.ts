@@ -91,8 +91,8 @@ export const searchListingsSchema = z.object({
 
     // Filters
     type: z.enum(['HAVE_ROOM', 'NEED_ROOM']).optional(),
-    minRent: z.string().transform(Number).pipe(z.number().int().positive()).optional(),
-    maxRent: z.string().transform(Number).pipe(z.number().int().positive()).optional(),
+    minRent: z.coerce.number().int().positive().optional(),
+    maxRent: z.coerce.number().int().positive().optional(),
     propertyType: z.enum(['APARTMENT', 'HOUSE', 'STUDIO', 'SHARED_ROOM', 'PRIVATE_ROOM']).optional(),
     furnishedStatus: z.enum(['FULLY_FURNISHED', 'SEMI_FURNISHED', 'UNFURNISHED']).optional(),
     genderPreference: z.enum(['MALE', 'FEMALE', 'ANY']).optional(),

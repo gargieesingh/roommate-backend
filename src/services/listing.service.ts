@@ -290,7 +290,9 @@ export class ListingService {
     if (sortBy === 'popular') orderBy = { viewCount: 'desc' };
 
     // Pagination
-    const skip = (page - 1) * limit;
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const skip = (pageNum - 1) * limitNum;
 
     // Execute query
     const [listings, total] = await Promise.all([
@@ -299,7 +301,7 @@ export class ListingService {
         select: LISTING_SELECT,
         orderBy,
         skip,
-        take: limit,
+        take: limitNum,
       }),
       prisma.listing.count({ where }),
     ]);
@@ -307,10 +309,10 @@ export class ListingService {
     return {
       listings,
       pagination: {
-        page,
-        limit,
+        page: pageNum,
+        limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }
