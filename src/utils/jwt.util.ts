@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
+import crypto from 'crypto';
 
 /** Payload stored inside JWT tokens */
 export interface JWTPayload {
@@ -20,11 +21,19 @@ export const generateAccessToken = (payload: JWTPayload): string => {
 /**
  * Generate a long-lived refresh token (default: 30 days).
  * Used to obtain new access tokens without re-login.
+ * Includes a unique jti (JWT ID) to prevent duplicate tokens.
  */
 export const generateRefreshToken = (payload: JWTPayload): string => {
-  return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
-  });
+  return jwt.sign(
+    {
+      ...payload,
+      jti: crypto.randomUUID(), // Add unique identifier
+    },
+    env.JWT_REFRESH_SECRET,
+    {
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
+    }
+  );
 };
 
 /**
