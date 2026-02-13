@@ -46,6 +46,26 @@ enum Cleanliness {
   RELAXED
 }
 
+enum TeamRole {
+  LEADER
+  MEMBER
+}
+
+enum TeamMemberStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum NotificationType {
+  TEAM_INVITE
+  TEAM_JOIN_REQUEST
+  TEAM_MEMBER_ACCEPTED
+  NEW_MESSAGE
+  LISTING_INQUIRY
+  REVIEW_RECEIVED
+}
+
 model User {
   id           String    @id @default(uuid())
   email        String    @unique
@@ -104,6 +124,10 @@ model User {
   reportsMade        Report[]       @relation("ReportsMade")
   reportsReceived    Report[]       @relation("ReportsReceived")
   favorites          Favorite[]
+  teamMembers        TeamMember[]
+  reviewsGiven       Review[]       @relation("ReviewsGiven")
+  reviewsReceived    Review[]       @relation("ReviewsReceived")
+  notifications      Notification[]
 
   @@map("users")
 }
@@ -222,6 +246,10 @@ model Conversation {
   listingId String?  @map("listing_id")
   listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
   
+  // Optional team context (for team conversations)
+  teamId    String?  @map("team_id")
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -335,5 +363,96 @@ model Favorite {
   @@map("favorites")
 }
 
+// ─── Team System Models ─────────────────────────────────────
 
+model Team {
+  id          String       @id @default(uuid())
+  name        String       @db.VarChar(100)
+  description String?      @db.VarChar(500)
+  budgetMin   Int?         @map("budget_min")
+  budgetMax   Int?         @map("budget_max")
+  city        String?
+  
+  // Team settings
+  maxMembers  Int          @default(4) @map("max_members")
+  isActive    Boolean      @default(true) @map("is_active")
+  
+  // Timestamps
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  
+  // Relations
+  members       TeamMember[]
+  conversations Conversation[]
+  
+  @@index([city, isActive])
+  @@index([createdAt])
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String           @id @default(uuid())
+  teamId    String           @map("team_id")
+  userId    String           @map("user_id")
+  team      Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  role      TeamRole
+  status    TeamMemberStatus @default(PENDING)
+  
+  // Timestamps
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  
+  @@unique([teamId, userId])
+  @@index([userId])
+  @@index([teamId, status])
+  @@map("team_members")
+}
+
+// ─── Review System Model ────────────────────────────────────
+
+model Review {
+  id           String   @id @default(uuid())
+  reviewerId   String   @map("reviewer_id")
+  reviewedId   String   @map("reviewed_id")
+  reviewer     User     @relation("ReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewed     User     @relation("ReviewsReceived", fields: [reviewedId], references: [id], onDelete: Cascade)
+  
+  rating       Int      // 1-5 stars
+  comment      String?  @db.VarChar(500)
+  
+  // Timestamps
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  @@unique([reviewerId, reviewedId])
+  @@index([reviewedId])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+// ─── Notification System Model ──────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type      NotificationType
+  title     String           @db.VarChar(100)
+  message   String           @db.VarChar(500)
+  
+  // Optional references
+  relatedUserId    String?  @map("related_user_id")
+  relatedTeamId    String?  @map("related_team_id")
+  relatedListingId String?  @map("related_listing_id")
+  
+  isRead    Boolean          @default(false) @map("is_read")
+  
+  // Timestamps
+  createdAt DateTime         @default(now()) @map("created_at")
+  
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
 
