@@ -46,6 +46,7 @@ export class UserService {
     const skip = (pageNum - 1) * limitNum;
     const where: any = {
       isActive: true,
+      isLooking: true,
       emailVerified: true, // Only show verified users
     };
 
