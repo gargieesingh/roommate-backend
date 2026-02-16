@@ -9,10 +9,10 @@ datasource db {
 
 
 enum Gender {
-  male
-  female
-  non_binary
-  prefer_not_to_say
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
 }
 
 enum SmokingPreference {
@@ -70,7 +70,11 @@ model User {
   id           String    @id @default(uuid())
   email        String    @unique
   phone        String?   @unique
-  passwordHash String    @map("password_hash")
+  passwordHash String?   @map("password_hash") // Made optional for OAuth users
+
+  // OAuth fields
+  googleId     String?   @unique @map("google_id")
+  authProvider String    @default("email") @map("auth_provider") // "email" or "google"
 
   // Basic Profile
   firstName String? @map("first_name")
