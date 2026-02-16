@@ -33,6 +33,7 @@ const USER_SELECT = {
   emailVerified: true,
   phoneVerified: true,
   isActive: true,
+  isLooking: true,
   createdAt: true,
   updatedAt: true,
   lastLoginAt: true,
