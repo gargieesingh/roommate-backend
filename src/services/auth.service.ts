@@ -11,6 +11,8 @@ const USER_SELECT = {
   id: true,
   email: true,
   phone: true,
+  googleId: true,
+  authProvider: true,
   firstName: true,
   lastName: true,
   age: true,
@@ -133,6 +135,13 @@ export class AuthService {
 
     if (!user) {
       const error = new Error('Invalid email or password') as Error & { statusCode: number };
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // Check if user signed up with OAuth (no password)
+    if (!user.passwordHash) {
+      const error = new Error('This account uses Google sign-in. Please use "Continue with Google" button.') as Error & { statusCode: number };
       error.statusCode = 401;
       throw error;
     }
@@ -304,6 +313,77 @@ export class AuthService {
       throw error;
     }
 
+    return user;
+  }
+
+  /**
+   * Find or create a user from Google OAuth profile.
+   * If user exists by googleId, return it.
+   * If user exists by email (from email/password signup), link Google account.
+   * Otherwise, create a new user.
+   */
+  async findOrCreateGoogleUser(data: {
+    googleId: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    profilePhoto?: string;
+  }) {
+    // Try to find user by Google ID
+    let user = await prisma.user.findUnique({
+      where: { googleId: data.googleId },
+      select: USER_SELECT,
+    });
+
+    if (user) {
+      // Update last login
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+        select: USER_SELECT,
+      });
+      logger.info(`Google user logged in: ${user.email}`);
+      return user;
+    }
+
+    // Try to find user by email (might have signed up with email/password)
+    user = await prisma.user.findUnique({
+      where: { email: data.email },
+      select: USER_SELECT,
+    });
+
+    if (user) {
+      // Link Google account to existing user
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: data.googleId,
+          authProvider: 'google',
+          lastLoginAt: new Date(),
+          emailVerified: true, // Google emails are verified
+        },
+        select: USER_SELECT,
+      });
+      logger.info(`Linked Google account to existing user: ${user.email}`);
+      return user;
+    }
+
+    // Create new user
+    user = await prisma.user.create({
+      data: {
+        email: data.email,
+        googleId: data.googleId,
+        authProvider: 'google',
+        firstName: data.firstName,
+        lastName: data.lastName,
+        profilePhoto: data.profilePhoto,
+        emailVerified: true, // Google emails are verified
+        lastLoginAt: new Date(),
+      },
+      select: USER_SELECT,
+    });
+
+    logger.info(`New Google user created: ${user.email}`);
     return user;
   }
 }

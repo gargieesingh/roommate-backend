@@ -149,4 +149,45 @@ export class AuthController {
       next(error);
     }
   }
+
+  /** GET /api/v1/auth/google - Initiate Google OAuth flow */
+  googleAuth(req: Request, res: Response, next: NextFunction): void {
+    // Passport will redirect to Google OAuth consent screen
+    // This is handled by passport middleware in routes
+  }
+
+  /** GET /api/v1/auth/google/callback - Handle Google OAuth callback */
+  async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = req.user as any;
+
+      if (!user) {
+        const error = new Error('Authentication failed') as Error & { statusCode: number };
+        error.statusCode = 401;
+        throw error;
+      }
+
+      // Generate JWT tokens
+      const { generateAccessToken, generateRefreshToken } = await import('../utils/jwt.util');
+      const accessToken = generateAccessToken({ userId: user.id, email: user.email });
+      const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
+
+      // Persist refresh token
+      const prisma = (await import('../config/database')).default;
+      await prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          token: refreshToken,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      // Redirect to frontend with tokens in URL
+      const { env } = await import('../config/env');
+      const frontendUrl = env.FRONTEND_URL;
+      res.redirect(`${frontendUrl}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

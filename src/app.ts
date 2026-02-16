@@ -21,6 +21,13 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ─── Passport initialization ────────────────────────────────────
+import passport from 'passport';
+import { configurePassport } from './config/passport.config';
+
+configurePassport();
+app.use(passport.initialize());
+
 // ─── Request logging (dev) ──────────────────────────────────────
 app.use((req, _res, next) => {
   logger.info(`${req.method} ${req.path}`);
