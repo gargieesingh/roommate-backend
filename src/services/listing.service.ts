@@ -25,8 +25,16 @@ const LISTING_SELECT = {
   occupationPreference: true,
   smokingAllowed: true,
   petsAllowed: true,
+  ageRangeMin: true,
+  ageRangeMax: true,
+  houseRules: true,
   availableFrom: true,
   availableUntil: true,
+  leaseLength: true,
+  utilitiesIncluded: true,
+  roomType: true,
+  state: true,
+  zipCode: true,
   photos: true,
   isActive: true,
   viewCount: true,
@@ -69,9 +77,17 @@ export class ListingService {
       occupationPreference?: string[];
       smokingAllowed?: boolean;
       petsAllowed?: boolean;
+      ageRangeMin?: number;
+      ageRangeMax?: number;
+      houseRules?: string[];
       availableFrom: Date;
       availableUntil?: Date;
       photos?: string[];
+      leaseLength?: number;
+      utilitiesIncluded?: boolean;
+      roomType?: string;
+      state?: string;
+      zipCode?: string;
     }
   ) {
     const listing = await prisma.listing.create({
@@ -137,9 +153,17 @@ export class ListingService {
       occupationPreference?: string[];
       smokingAllowed?: boolean;
       petsAllowed?: boolean;
+      ageRangeMin?: number;
+      ageRangeMax?: number;
+      houseRules?: string[];
       availableFrom?: Date;
       availableUntil?: Date;
       photos?: string[];
+      leaseLength?: number;
+      utilitiesIncluded?: boolean;
+      roomType?: string;
+      state?: string;
+      zipCode?: string;
       isActive?: boolean;
     }
   ) {

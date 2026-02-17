@@ -213,12 +213,24 @@ model Listing {
   furnishedStatus FurnishedStatus?
   bathrooms       Int?
   amenities       String[]        // ["WiFi", "Parking", "Gym", "AC"]
+
+  // New fields added
+  leaseLength       Int?
+  utilitiesIncluded Boolean  @default(false)
+  roomType          String?
+  state             String?
+  zipCode           String?
   
   // Preferences
   genderPreference   GenderPreference?
   occupationPreference String[]      // ["Student", "Working Professional"]
   smokingAllowed     Boolean?
   petsAllowed        Boolean?
+  
+  // Additional Preferences
+  ageRangeMin        Int?        @map("age_range_min")
+  ageRangeMax        Int?        @map("age_range_max")
+  houseRules         String[]    @map("house_rules")
   
   // Availability
   availableFrom  DateTime
