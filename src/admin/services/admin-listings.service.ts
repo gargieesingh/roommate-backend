@@ -219,4 +219,51 @@ export class AdminListingsService {
             ipAddress,
         });
     }
+    async bulkAction(listingIds: string[], action: 'delete' | 'flag' | 'approve' | 'reject', adminId: string, ipAddress?: string) {
+        if (!listingIds || listingIds.length === 0) return;
+
+        let actionType = '';
+
+        if (action === 'delete') {
+            await prisma.listing.deleteMany({
+                where: { id: { in: listingIds } }
+            });
+            actionType = 'BULK_DELETE_LISTINGS';
+        } else {
+            let updateData: any = {};
+
+            switch (action) {
+                case 'flag':
+                    updateData = { isFlagged: true };
+                    actionType = 'BULK_FLAG_LISTINGS';
+                    break;
+                case 'approve':
+                    updateData = { isActive: true, status: 'active' }; // Assuming status field exists or isActive matches
+                    actionType = 'BULK_APPROVE_LISTINGS';
+                    break;
+                case 'reject':
+                    updateData = { isActive: false, status: 'rejected' };
+                    actionType = 'BULK_REJECT_LISTINGS';
+                    break;
+                default:
+                    throw new Error('Invalid bulk action');
+            }
+
+            await prisma.listing.updateMany({
+                where: { id: { in: listingIds } },
+                data: updateData,
+            });
+        }
+
+        await auditLogService.log({
+            adminId,
+            actionType,
+            entityType: 'LISTING',
+            entityId: 'BULK',
+            details: { listingIds, action },
+            ipAddress,
+        });
+
+        return { count: listingIds.length };
+    }
 }

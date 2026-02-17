@@ -415,4 +415,54 @@ export class AdminUsersService {
 
         return user;
     }
+    /**
+     * Bulk actions
+     */
+    async bulkAction(userIds: string[], action: 'delete' | 'ban' | 'verify' | 'suspend', adminId: string, ipAddress?: string) {
+        if (!userIds || userIds.length === 0) return;
+
+        let updateData: any = {};
+        let actionType = '';
+
+        switch (action) {
+            case 'delete':
+                updateData = { isActive: false };
+                actionType = 'BULK_DELETE_USERS';
+                break;
+            case 'ban':
+                updateData = { isBanned: true };
+                actionType = 'BULK_BAN_USERS';
+                break;
+            case 'verify':
+                updateData = { emailVerified: true };
+                actionType = 'BULK_VERIFY_USERS';
+                break;
+            case 'suspend':
+                // Assuming 7 days for bulk suspend
+                updateData = {
+                    suspendedUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                    suspensionReason: 'Bulk suspension via admin panel'
+                };
+                actionType = 'BULK_SUSPEND_USERS';
+                break;
+            default:
+                throw new Error('Invalid bulk action');
+        }
+
+        await prisma.user.updateMany({
+            where: { id: { in: userIds } },
+            data: updateData,
+        });
+
+        await auditLogService.log({
+            adminId,
+            actionType,
+            entityType: 'USER',
+            entityId: 'BULK',
+            details: { userIds, action },
+            ipAddress,
+        });
+
+        return { count: userIds.length };
+    }
 }
