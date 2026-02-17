@@ -108,6 +108,14 @@ model User {
   // Status
   isActive Boolean @default(true) @map("is_active")
   isLooking Boolean @default(true) @map("is_looking")
+  
+  // Admin Fields
+  isAdmin          Boolean   @default(false) @map("is_admin")
+  isBanned         Boolean   @default(false) @map("is_banned")
+  suspendedUntil   DateTime? @map("suspended_until")
+  suspensionReason String?   @map("suspension_reason")
+  banReason        String?   @map("ban_reason")
+  adminNotes       String?   @db.Text @map("admin_notes")
 
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -218,6 +226,10 @@ model Listing {
   // Status
   isActive   Boolean @default(true) @map("is_active")
   viewCount  Int     @default(0) @map("view_count")
+  
+  // Admin Fields
+  isFlagged  Boolean @default(false) @map("is_flagged")
+  flagReason String? @map("flag_reason")
   
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -423,6 +435,9 @@ model Review {
   rating       Int      // 1-5 stars
   comment      String?  @db.VarChar(500)
   
+  // Admin Fields
+  isHidden     Boolean  @default(false) @map("is_hidden")
+  
   // Timestamps
   createdAt    DateTime @default(now()) @map("created_at")
   
@@ -455,5 +470,50 @@ model Notification {
   
   @@index([userId, isRead, createdAt])
   @@map("notifications")
+}
+
+// ─── Admin System Models ────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  adminId     String   @map("admin_id")
+  actionType  String   @map("action_type")
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  details     Json?
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@index([adminId, createdAt])
+  @@index([entityType, entityId])
+  @@index([actionType])
+  @@map("audit_logs")
+}
+
+model AdminNotification {
+  id            String    @id @default(uuid())
+  adminId       String    @map("admin_id")
+  title         String    @db.VarChar(100)
+  message       String    @db.VarChar(1000)
+  targetType    String    @map("target_type")
+  recipientIds  Json?     @map("recipient_ids")
+  channel       String
+  scheduledFor  DateTime? @map("scheduled_for")
+  sentAt        DateTime? @map("sent_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  
+  @@index([adminId, createdAt])
+  @@map("admin_notifications")
+}
+
+model PlatformSettings {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("platform_settings")
 }
 
