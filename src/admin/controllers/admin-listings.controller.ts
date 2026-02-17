@@ -28,7 +28,7 @@ export class AdminListingsController {
         }
     }
 
-    async getListingById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getListingById(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const listing = await adminListingsService.getListingById(req.params.id);
 
@@ -41,7 +41,7 @@ export class AdminListingsController {
         }
     }
 
-    async updateListing(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async updateListing(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -57,7 +57,7 @@ export class AdminListingsController {
         }
     }
 
-    async toggleListingStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async toggleListingStatus(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -73,7 +73,7 @@ export class AdminListingsController {
         }
     }
 
-    async flagListing(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async flagListing(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -90,7 +90,7 @@ export class AdminListingsController {
         }
     }
 
-    async unflagListing(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async unflagListing(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -106,7 +106,7 @@ export class AdminListingsController {
         }
     }
 
-    async deleteListing(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async deleteListing(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -115,6 +115,23 @@ export class AdminListingsController {
             res.json({
                 success: true,
                 message: 'Listing deleted successfully',
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+    async bulkAction(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const adminId = req.user!.userId;
+            const ipAddress = req.ip;
+            const { listingIds, action } = req.body;
+
+            const result = await adminListingsService.bulkAction(listingIds, action, adminId, ipAddress);
+
+            res.json({
+                success: true,
+                message: 'Bulk action completed successfully',
+                data: result
             });
         } catch (error) {
             next(error);

@@ -31,7 +31,7 @@ export class AdminUsersController {
     }
 
     /** GET /api/admin/users/:id */
-    async getUserById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getUserById(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const user = await adminUsersService.getUserById(req.params.id);
 
@@ -45,7 +45,7 @@ export class AdminUsersController {
     }
 
     /** PUT /api/admin/users/:id */
-    async updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async updateUser(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -62,7 +62,7 @@ export class AdminUsersController {
     }
 
     /** POST /api/admin/users/:id/suspend */
-    async suspendUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async suspendUser(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -81,7 +81,7 @@ export class AdminUsersController {
     }
 
     /** POST /api/admin/users/:id/ban */
-    async banUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async banUser(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -100,7 +100,7 @@ export class AdminUsersController {
     }
 
     /** POST /api/admin/users/:id/unban */
-    async unbanUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async unbanUser(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -118,7 +118,7 @@ export class AdminUsersController {
     }
 
     /** POST /api/admin/users/:id/unsuspend */
-    async unsuspendUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async unsuspendUser(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -136,7 +136,7 @@ export class AdminUsersController {
     }
 
     /** POST /api/admin/users/:id/verify-email */
-    async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async verifyEmail(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -154,7 +154,7 @@ export class AdminUsersController {
     }
 
     /** POST /api/admin/users/:id/verify-phone */
-    async verifyPhone(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async verifyPhone(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -172,7 +172,7 @@ export class AdminUsersController {
     }
 
     /** DELETE /api/admin/users/:id */
-    async deleteUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async deleteUser(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
@@ -182,6 +182,23 @@ export class AdminUsersController {
             res.json({
                 success: true,
                 message: 'User deleted successfully',
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+    async bulkAction(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const adminId = req.user!.userId;
+            const ipAddress = req.ip;
+            const { userIds, action } = req.body;
+
+            const result = await adminUsersService.bulkAction(userIds, action, adminId, ipAddress);
+
+            res.json({
+                success: true,
+                message: 'Bulk action completed successfully',
+                data: result
             });
         } catch (error) {
             next(error);
