@@ -104,6 +104,10 @@ router.post('/team/invite', adminSettingsController.inviteAdmin.bind(adminSettin
 router.delete('/team/:id', adminSettingsController.removeAdmin.bind(adminSettingsController));
 router.get('/audit-log', adminSettingsController.getAuditLog.bind(adminSettingsController));
 
+// Bulk Actions
+router.post('/users/bulk-action', adminUsersController.bulkAction.bind(adminUsersController));
+router.post('/listings/bulk-action', adminListingsController.bulkAction.bind(adminListingsController));
+
 // Export
 router.get('/export/users', adminExportController.exportUsers.bind(adminExportController));
 router.get('/export/listings', adminExportController.exportListings.bind(adminExportController));
