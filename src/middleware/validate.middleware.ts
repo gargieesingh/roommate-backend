@@ -10,11 +10,17 @@ import { z } from 'zod';
 export const validate = (schema: z.ZodType) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await schema.parseAsync({
+      const result = await schema.parseAsync({
         body: req.body,
         query: req.query,
         params: req.params,
       });
+
+      // Update request with validated/transformed data
+      req.body = (result as any).body;
+      // Use Object.defineProperty to bypass getter-only restriction for query and params
+      Object.defineProperty(req, 'query', { value: (result as any).query, writable: true });
+      Object.defineProperty(req, 'params', { value: (result as any).params, writable: true });
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {

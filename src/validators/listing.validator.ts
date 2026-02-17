@@ -4,41 +4,73 @@ import { z } from 'zod';
 export const createListingSchema = z.object({
   body: z.object({
     // Listing Type & Basic Info
-    type: z.enum(['HAVE_ROOM', 'NEED_ROOM']),
+    type: z.enum(['HAVE_ROOM', 'NEED_ROOM']).default('HAVE_ROOM'),
     title: z.string().min(10, 'Title must be at least 10 characters').max(100, 'Title must be at most 100 characters'),
     description: z.string().min(20, 'Description must be at least 20 characters').max(1000, 'Description must be at most 1000 characters'),
 
     // Financial
-    rent: z.number().int().positive('Rent must be a positive number'),
-    deposit: z.number().int().nonnegative('Deposit must be a non-negative number'),
-    currency: z.string().optional(),
+    rent: z.coerce.number().int().positive('Rent must be a positive number'),
+    deposit: z.coerce.number().int().nonnegative('Deposit must be a non-negative number').optional().default(0),
+    currency: z.string().default('INR'), // Default to INR if missing
 
+    // Lease & Utilities (Frontend sends these)
+    leaseLength: z.coerce.number().positive().optional(),
+    utilitiesIncluded: z.union([z.boolean(), z.string().transform(val => val === 'true')]).optional(),
+
+    // Room Type (Frontend sends this)
+    roomType: z.enum(['private', 'shared', 'entire']).optional(),
 
     // Location
     city: z.string().min(2, 'City is required'),
+    state: z.string().optional(), // Frontend sends state
+    zipCode: z.string().optional(), // Frontend sends zipCode
     area: z.string().optional(),
     address: z.string().optional(),
-    latitude: z.number().min(-90).max(90).optional(),
-    longitude: z.number().min(-180).max(180).optional(),
+    latitude: z.coerce.number().min(-90).max(90).optional(),
+    longitude: z.coerce.number().min(-180).max(180).optional(),
 
     // Property Details (optional, mainly for HAVE_ROOM)
     propertyType: z.enum(['APARTMENT', 'HOUSE', 'STUDIO', 'SHARED_ROOM', 'PRIVATE_ROOM']).optional(),
     furnishedStatus: z.enum(['FULLY_FURNISHED', 'SEMI_FURNISHED', 'UNFURNISHED']).optional(),
-    bathrooms: z.number().int().positive().optional(),
-    amenities: z.array(z.string()).max(20, 'Maximum 20 amenities allowed').optional(),
+    bathrooms: z.coerce.number().int().positive().optional(),
+    
+    // Arrays - Handle single string or array of strings from FormData
+    amenities: z.preprocess(
+      (val) => (Array.isArray(val) ? val : val ? [val] : []),
+      z.array(z.string())
+    ).optional(),
 
     // Preferences
-    genderPreference: z.enum(['MALE', 'FEMALE', 'ANY']).optional(),
-    occupationPreference: z.array(z.string()).max(10, 'Maximum 10 occupation preferences allowed').optional(),
-    smokingAllowed: z.boolean().optional(),
-    petsAllowed: z.boolean().optional(),
+    genderPreference: z.string()
+      .transform(val => val.toUpperCase()) // Handle 'any' -> 'ANY'
+      .pipe(z.enum(['MALE', 'FEMALE', 'ANY']))
+      .optional(),
+      
+    occupationPreference: z.preprocess(
+      (val) => (Array.isArray(val) ? val : val ? [val] : []),
+      z.array(z.string())
+    ).optional(),
+
+    smokingAllowed: z.union([z.boolean(), z.string().transform(val => val === 'true')]).optional(),
+    petsAllowed: z.union([z.boolean(), z.string().transform(val => val === 'true')]).optional(),
+
+    // Additional Preferences
+    ageRangeMin: z.coerce.number().int().min(18).max(100).optional(),
+    ageRangeMax: z.coerce.number().int().min(18).max(100).optional(),
+    houseRules: z.preprocess(
+      (val) => (Array.isArray(val) ? val : val ? [val] : []),
+      z.array(z.string())
+    ).optional(),
 
     // Availability
-    availableFrom: z.string().datetime('Invalid date format'),
-    availableUntil: z.string().datetime('Invalid date format').optional(),
+    availableFrom: z.coerce.date(), // Zod handles date string to Date object
+    availableUntil: z.coerce.date().optional(),
 
     // Media
-    photos: z.array(z.string().url('Each photo must be a valid URL')).max(8, 'Maximum 8 photos allowed').optional(),
+    photos: z.preprocess(
+      (val) => (Array.isArray(val) ? val : val ? [val] : []),
+      z.array(z.string().url('Each photo must be a valid URL'))
+    ).optional(),
   }),
 });
 
@@ -60,6 +92,9 @@ export const updateListingSchema = z.object({
     amenities: z.array(z.string()).max(20).optional(),
     genderPreference: z.enum(['MALE', 'FEMALE', 'ANY']).optional(),
     occupationPreference: z.array(z.string()).max(10).optional(),
+    ageRangeMin: z.coerce.number().int().min(18).max(100).optional(),
+    ageRangeMax: z.coerce.number().int().min(18).max(100).optional(),
+    houseRules: z.array(z.string()).max(20).optional(),
     smokingAllowed: z.boolean().optional(),
     petsAllowed: z.boolean().optional(),
     availableFrom: z.string().datetime().optional(),

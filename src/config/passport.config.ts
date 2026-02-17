@@ -44,6 +44,10 @@ export const configurePassport = () => {
             profilePhoto,
           });
 
+          if (!user) {
+            return done(new Error('Failed to create or find user'), undefined);
+          }
+
           return done(null, user);
         } catch (error) {
           return done(error as Error, undefined);

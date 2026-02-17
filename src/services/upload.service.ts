@@ -5,7 +5,7 @@ import { env } from '../config/env';
 // By default, it returns mock URLs for development
 // In production, integrate with Cloudinary or AWS S3
 
-interface UploadResult {
+export interface UploadResult {
   url: string;
   publicId?: string;
 }

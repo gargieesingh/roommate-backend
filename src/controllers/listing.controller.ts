@@ -1,6 +1,7 @@
 /// <reference path="../types/express.d.ts" />
 import { Request, Response, NextFunction } from 'express';
 import { ListingService } from '../services/listing.service';
+import { UploadService } from '../services/upload.service';
 
 const listingService = new ListingService();
 
@@ -8,11 +9,62 @@ export class ListingController {
   /** POST /api/v1/listings */
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      console.log('📝 Creating listing request received');
+      console.log('Files:', req.files);
+      console.log('Body:', req.body);
+      
       const userId = req.user!.userId;
+      
+      // Handle file uploads if any
+      const files = req.files as Express.Multer.File[];
+      const uploadedPhotoUrls: string[] = [];
+      
+      if (files && files.length > 0) {
+        const uploadService = new UploadService();
+        const uploadResults = await uploadService.uploadMultipleImages(files, 'listings');
+        uploadedPhotoUrls.push(...uploadResults.map(r => r.url));
+      }
+      
+      const rawBody = req.body;
+
+      // Maps for frontend -> backend enums
+      const propertyTypeMap: Record<string, any> = {
+        'private': 'PRIVATE_ROOM',
+        'shared': 'SHARED_ROOM',
+        'entire': 'APARTMENT', // Defaulting entire place to APARTMENT, could be HOUSE
+      };
+
       const data = {
-        ...req.body,
-        availableFrom: new Date(req.body.availableFrom),
-        availableUntil: req.body.availableUntil ? new Date(req.body.availableUntil) : undefined,
+        ...rawBody,
+        // Numeric fields (already coerced by validator, but safe to keep Number())
+        rent: Number(rawBody.rent),
+        deposit: Number(rawBody.deposit || 0),
+        bathrooms: rawBody.bathrooms ? Number(rawBody.bathrooms) : undefined,
+        leaseLength: rawBody.leaseLength ? Number(rawBody.leaseLength) : undefined,
+        latitude: rawBody.latitude ? Number(rawBody.latitude) : undefined,
+        longitude: rawBody.longitude ? Number(rawBody.longitude) : undefined,
+        ageRangeMin: rawBody.ageRangeMin ? Number(rawBody.ageRangeMin) : undefined,
+        ageRangeMax: rawBody.ageRangeMax ? Number(rawBody.ageRangeMax) : undefined,
+        
+        // Boolean fields - Handle both boolean (from validator) and string (fallback)
+        utilitiesIncluded: rawBody.utilitiesIncluded === true || rawBody.utilitiesIncluded === 'true',
+        smokingAllowed: rawBody.smokingAllowed === true || rawBody.smokingAllowed === 'true',
+        petsAllowed: rawBody.petsAllowed === true || rawBody.petsAllowed === 'true',
+        
+        // Map roomType to propertyType if not present
+        propertyType: rawBody.propertyType || propertyTypeMap[rawBody.roomType] || undefined,
+
+        // Array fields - Already processed by validator but keep safe fallback
+        amenities: Array.isArray(rawBody.amenities) ? rawBody.amenities : [],
+        occupationPreference: Array.isArray(rawBody.occupationPreference) ? rawBody.occupationPreference : [],
+        houseRules: Array.isArray(rawBody.houseRules) ? rawBody.houseRules : [],
+        
+        // Date fields
+        availableFrom: new Date(rawBody.availableFrom),
+        availableUntil: rawBody.availableUntil ? new Date(rawBody.availableUntil) : undefined,
+        
+        // Photos
+        photos: uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls : (rawBody.photos || []),
       };
 
       const listing = await listingService.createListing(userId, data);

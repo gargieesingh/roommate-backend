@@ -47,10 +47,13 @@ router.get(
 
 // ─── Protected routes (require valid JWT) ───────────────────────
 
+import { upload } from '../middleware/multer.middleware';
+
 /** POST /api/v1/listings - Create new listing */
 router.post(
   '/',
   authenticate,
+  upload.array('photos', 8),
   validate(createListingSchema),
   listingController.create.bind(listingController)
 );
