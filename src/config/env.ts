@@ -20,8 +20,8 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.string().default('900000'),
   RATE_LIMIT_MAX_REQUESTS: z.string().default('100'),
   CORS_ORIGIN: z.string().default('http://localhost:19006'),
-  GOOGLE_CLIENT_ID: z.string().min(1, 'GOOGLE_CLIENT_ID is required'),
-  GOOGLE_CLIENT_SECRET: z.string().min(1, 'GOOGLE_CLIENT_SECRET is required'),
+  GOOGLE_CLIENT_ID: z.string().optional().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
   GOOGLE_CALLBACK_URL: z.string().default('http://localhost:3000/api/v1/auth/google/callback'),
   FRONTEND_URL: z.string().default('http://localhost:8080'),
 });
