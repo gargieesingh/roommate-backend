@@ -33,7 +33,7 @@ export const createListingSchema = z.object({
     propertyType: z.enum(['APARTMENT', 'HOUSE', 'STUDIO', 'SHARED_ROOM', 'PRIVATE_ROOM']).optional(),
     furnishedStatus: z.enum(['FULLY_FURNISHED', 'SEMI_FURNISHED', 'UNFURNISHED']).optional(),
     bathrooms: z.coerce.number().int().positive().optional(),
-    
+
     // Arrays - Handle single string or array of strings from FormData
     amenities: z.preprocess(
       (val) => (Array.isArray(val) ? val : val ? [val] : []),
@@ -45,7 +45,7 @@ export const createListingSchema = z.object({
       .transform(val => val.toUpperCase()) // Handle 'any' -> 'ANY'
       .pipe(z.enum(['MALE', 'FEMALE', 'ANY']))
       .optional(),
-      
+
     occupationPreference: z.preprocess(
       (val) => (Array.isArray(val) ? val : val ? [val] : []),
       z.array(z.string())
@@ -121,8 +121,8 @@ export const userIdListingsParamSchema = z.object({
 /** GET /api/v1/listings/search */
 export const searchListingsSchema = z.object({
   query: z.object({
-    // Required
-    city: z.string().min(1, 'City is required'),
+    // Optional - if not provided, return all listings
+    city: z.string().min(1).optional(),
 
     // Filters
     type: z.enum(['HAVE_ROOM', 'NEED_ROOM']).optional(),

@@ -252,7 +252,7 @@ export class ListingService {
    * Search listings with filters and pagination
    */
   async searchListings(filters: {
-    city: string;
+    city?: string;
     type?: ListingType;
     minRent?: number;
     maxRent?: number;
@@ -284,9 +284,10 @@ export class ListingService {
 
     // Build where clause
     const where: any = {
-      city,
       isActive: true,
     };
+
+    if (city) where.city = { contains: city, mode: 'insensitive' };
 
     if (type) where.type = type;
     if (propertyType) where.propertyType = propertyType;
