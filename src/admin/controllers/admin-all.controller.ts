@@ -40,7 +40,7 @@ export class AdminTeamsController {
 
     async getTeamById(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const team = await adminTeamsService.getTeamById(req.params.id);
+            const team = await adminTeamsService.getTeamById(req.params.id as string);
             res.json({ success: true, data: { team } });
         } catch (error) {
             next(error);
@@ -51,7 +51,7 @@ export class AdminTeamsController {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
-            await adminTeamsService.removeTeamMember(req.params.teamId, req.params.userId, adminId, ipAddress);
+            await adminTeamsService.removeTeamMember(req.params.teamId as string, req.params.userId as string, adminId, ipAddress);
             res.json({ success: true, message: 'Team member removed successfully' });
         } catch (error) {
             next(error);
@@ -62,7 +62,7 @@ export class AdminTeamsController {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
-            await adminTeamsService.deleteTeam(req.params.id, adminId, ipAddress);
+            await adminTeamsService.deleteTeam(req.params.id as string, adminId, ipAddress);
             res.json({ success: true, message: 'Team deleted successfully' });
         } catch (error) {
             next(error);
@@ -88,7 +88,7 @@ export class AdminConversationsController {
 
     async getConversationById(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const conversation = await adminConversationsService.getConversationById(req.params.id);
+            const conversation = await adminConversationsService.getConversationById(req.params.id as string);
             res.json({ success: true, data: { conversation } });
         } catch (error) {
             next(error);
@@ -99,7 +99,7 @@ export class AdminConversationsController {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
-            await adminConversationsService.deleteConversation(req.params.id, adminId, ipAddress);
+            await adminConversationsService.deleteConversation(req.params.id as string, adminId, ipAddress);
             res.json({ success: true, message: 'Conversation deleted successfully' });
         } catch (error) {
             next(error);
@@ -127,7 +127,7 @@ export class AdminReportsController {
 
     async getReportById(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
-            const report = await adminReportsService.getReportById(req.params.id);
+            const report = await adminReportsService.getReportById(req.params.id as string);
             res.json({ success: true, data: { report } });
         } catch (error) {
             next(error);
@@ -139,7 +139,7 @@ export class AdminReportsController {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
             const { status, notes } = req.body;
-            const report = await adminReportsService.updateReportStatus(req.params.id, status, notes, adminId, ipAddress);
+            const report = await adminReportsService.updateReportStatus(req.params.id as string, status, notes, adminId, ipAddress);
             res.json({ success: true, message: 'Report status updated successfully', data: { report } });
         } catch (error) {
             next(error);
@@ -169,7 +169,7 @@ export class AdminReviewsController {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
-            const review = await adminReviewsService.hideReview(req.params.id, adminId, ipAddress);
+            const review = await adminReviewsService.hideReview(req.params.id as string, adminId, ipAddress);
             res.json({ success: true, message: 'Review hidden successfully', data: { review } });
         } catch (error) {
             next(error);
@@ -180,7 +180,7 @@ export class AdminReviewsController {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
-            const review = await adminReviewsService.showReview(req.params.id, adminId, ipAddress);
+            const review = await adminReviewsService.showReview(req.params.id as string, adminId, ipAddress);
             res.json({ success: true, message: 'Review shown successfully', data: { review } });
         } catch (error) {
             next(error);
@@ -191,7 +191,7 @@ export class AdminReviewsController {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
-            await adminReviewsService.deleteReview(req.params.id, adminId, ipAddress);
+            await adminReviewsService.deleteReview(req.params.id as string, adminId, ipAddress);
             res.json({ success: true, message: 'Review deleted successfully' });
         } catch (error) {
             next(error);
@@ -314,7 +314,7 @@ export class AdminSettingsController {
         try {
             const adminId = req.user!.userId;
             const ipAddress = req.ip;
-            await adminSettingsService.removeAdmin(req.params.id, adminId, ipAddress);
+            await adminSettingsService.removeAdmin(req.params.id as string, adminId, ipAddress);
             res.json({ success: true, message: 'Admin removed successfully' });
         } catch (error) {
             next(error);

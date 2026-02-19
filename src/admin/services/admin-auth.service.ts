@@ -1,5 +1,5 @@
 import prisma from '../../config/database';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { generateAdminAccessToken, generateAdminRefreshToken } from '../utils/admin-jwt.util';
 
 export class AdminAuthService {
@@ -24,6 +24,11 @@ export class AdminAuthService {
         });
 
         if (!user) {
+            throw new Error('Invalid credentials');
+        }
+
+        // Check if user has a password set (might be OAuth user)
+        if (!user.passwordHash) {
             throw new Error('Invalid credentials');
         }
 

@@ -15,10 +15,10 @@ export interface AdminJWTPayload {
  */
 export const generateAdminAccessToken = (payload: Omit<AdminJWTPayload, 'isAdmin'>): string => {
     return jwt.sign(
-        { ...payload, isAdmin: true },
-        process.env.ADMIN_JWT_SECRET || env.JWT_SECRET,
+        { ...payload, isAdmin: true } as any,
+        (process.env.ADMIN_JWT_SECRET || env.JWT_SECRET) as string,
         {
-            expiresIn: process.env.ADMIN_JWT_EXPIRES_IN || '12h',
+            expiresIn: (process.env.ADMIN_JWT_EXPIRES_IN || '12h') as any,
         }
     );
 };
@@ -33,10 +33,10 @@ export const generateAdminRefreshToken = (payload: Omit<AdminJWTPayload, 'isAdmi
             ...payload,
             isAdmin: true,
             jti: crypto.randomUUID(),
-        },
-        process.env.ADMIN_JWT_REFRESH_SECRET || env.JWT_REFRESH_SECRET,
+        } as any,
+        (process.env.ADMIN_JWT_REFRESH_SECRET || env.JWT_REFRESH_SECRET) as string,
         {
-            expiresIn: process.env.ADMIN_JWT_REFRESH_EXPIRES_IN || '7d',
+            expiresIn: (process.env.ADMIN_JWT_REFRESH_EXPIRES_IN || '7d') as any,
         }
     );
 };
