@@ -9,6 +9,12 @@ const authService = new AuthService();
  * Configure Passport.js with Google OAuth 2.0 Strategy
  */
 export const configurePassport = () => {
+  // Only register Google strategy if credentials are configured
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    console.warn('⚠️  Google OAuth not configured (GOOGLE_CLIENT_ID/SECRET missing). Google login disabled.');
+    return;
+  }
+
   passport.use(
     new GoogleStrategy(
       {
