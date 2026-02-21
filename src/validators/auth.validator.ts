@@ -60,7 +60,7 @@ export const updateProfileSchema = z.object({
       firstName: z.string().min(2, 'First name must be at least 2 characters').optional(),
       lastName: z.string().min(2, 'Last name must be at least 2 characters').optional(),
       age: z.number().int().min(18, 'Must be at least 18').max(100, 'Must be 100 or younger').optional(),
-      gender: z.enum(['male', 'female', 'non_binary', 'prefer_not_to_say']).optional(),
+      gender: z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'PREFER_NOT_TO_SAY']).optional(),
       city: z.string().min(2, 'City must be at least 2 characters').optional(),
       bio: z.string().max(500, 'Bio must be 500 characters or fewer').optional(),
 
@@ -82,7 +82,7 @@ export const updateProfileSchema = z.object({
       languages: z.array(z.string().min(1)).max(10, 'Maximum 10 languages allowed').optional(),
 
       // Photos
-      profilePhoto: z.string().url('Profile photo must be a valid URL').optional(),
+      profilePhoto: z.string().min(1, 'Profile photo cannot be empty').optional(),
       additionalPhotos: z.array(z.string().url('Each photo must be a valid URL')).max(5, 'Maximum 5 additional photos allowed').optional(),
     })
     .refine(
