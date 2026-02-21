@@ -97,9 +97,9 @@ export const updateListingSchema = z.object({
     houseRules: z.array(z.string()).max(20).optional(),
     smokingAllowed: z.boolean().optional(),
     petsAllowed: z.boolean().optional(),
-    availableFrom: z.string().datetime().optional(),
-    availableUntil: z.string().datetime().optional(),
-    photos: z.array(z.string().url()).max(8).optional(),
+    availableFrom: z.coerce.date().optional(),
+    availableUntil: z.coerce.date().optional(),
+    photos: z.array(z.string().min(1)).max(8).optional(),
     isActive: z.boolean().optional(),
   }),
 });

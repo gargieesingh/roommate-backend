@@ -62,8 +62,11 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  validate(listingIdParamSchema),
-  validate(updateListingSchema),
+  // Combine param + body validation in ONE schema so the validate middleware
+  // doesn't overwrite req.body with undefined between two separate calls.
+  validate(
+    listingIdParamSchema.merge(updateListingSchema)
+  ),
   listingController.update.bind(listingController)
 );
 
