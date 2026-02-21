@@ -188,10 +188,43 @@ export class ListingService {
       throw error;
     }
 
-    const listing = await prisma.listing.update({
-      where: { id },
-      data,
-      select: LISTING_SELECT,
+    // Extract photos from data to handle listingPhotos table separately
+    const { photos, ...listingData } = data as any;
+
+    const listing = await prisma.$transaction(async (tx) => {
+      // Update scalar listing fields
+      const updated = await tx.listing.update({
+        where: { id },
+        data: photos ? { ...listingData, photos } : listingData,
+        select: LISTING_SELECT,
+      });
+
+      // If photos were provided, sync the listingPhotos join table
+      // (the frontend mapper prefers listingPhotos over the photos[] column)
+      if (photos && Array.isArray(photos)) {
+        // Delete all existing photo records for this listing
+        await tx.listingPhoto.deleteMany({ where: { listingId: id } });
+
+        // Re-insert from the new photos array
+        if (photos.length > 0) {
+          await tx.listingPhoto.createMany({
+            data: photos.map((url: string, index: number) => ({
+              listingId: id,
+              url,
+              fileKey: url.startsWith('data:') ? `base64-${index}` : url,
+              order: index,
+            })),
+          });
+        }
+
+        // Re-fetch with fresh listingPhotos
+        return tx.listing.findUnique({
+          where: { id },
+          select: LISTING_SELECT,
+        });
+      }
+
+      return updated;
     });
 
     logger.info(`Listing updated: ${id} by user ${userId}`);
