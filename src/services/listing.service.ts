@@ -1,9 +1,9 @@
 import prisma from '../config/database';
-import { ListingType, PropertyType, FurnishedStatus, GenderPreference } from '@prisma/client';
+import { ListingType, PropertyType, FurnishedStatus, GenderPreference, Prisma } from '@prisma/client';
 import logger from '../config/logger';
 
 /** Fields returned in listing responses */
-const LISTING_SELECT = {
+const LISTING_SELECT: Prisma.ListingSelect = {
   id: true,
   userId: true,
   type: true,
@@ -49,7 +49,10 @@ const LISTING_SELECT = {
       phoneVerified: true,
     },
   },
-} as const;
+  listingPhotos: {
+    orderBy: { order: 'asc' },
+  },
+};
 
 export class ListingService {
   /**
