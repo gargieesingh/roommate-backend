@@ -232,11 +232,11 @@ export class ListingService {
   }
 
   /**
-   * Get all listings by a specific user
+   * Get all listings by a specific user (excludes soft-deleted)
    */
   async getUserListings(userId: string) {
     const listings = await prisma.listing.findMany({
-      where: { userId },
+      where: { userId, isActive: true },
       select: LISTING_SELECT,
       orderBy: { createdAt: 'desc' },
     });
@@ -245,7 +245,7 @@ export class ListingService {
   }
 
   /**
-   * Get current user's listings
+   * Get current user's listings (excludes soft-deleted)
    */
   async getMyListings(userId: string) {
     return this.getUserListings(userId);
