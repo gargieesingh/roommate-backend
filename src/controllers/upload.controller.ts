@@ -1,23 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import { UploadService } from '../services/upload.service';
-import { AppError } from '../utils/errors';
 
 const uploadService = new UploadService();
 
 export class UploadController {
-  /** POST /api/v1/upload - Upload single image */
-  async uploadSingle(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /** POST /api/v1/upload/presigned-url */
+  async generatePresignedUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.file) {
-        throw new AppError('No file uploaded', 400);
-      }
+      const userId = req.user!.userId;
+      const { listingId, filename, contentType } = req.body;
 
-      const folder = req.body.folder || 'general';
-      const result = await uploadService.uploadImage(req.file, folder);
+      const result = await uploadService.generatePresignedUrl(userId, listingId, filename, contentType);
 
-      res.json({
+      res.status(200).json({
         success: true,
-        message: 'File uploaded successfully',
+        message: 'Presigned URL generated successfully',
         data: result,
       });
     } catch (error) {
@@ -25,20 +22,53 @@ export class UploadController {
     }
   }
 
-  /** POST /api/v1/upload/multiple - Upload multiple images */
-  async uploadMultiple(req: Request, res: Response, next: NextFunction): Promise<void> {
+  /** POST /api/v1/upload/confirm */
+  async confirmUpload(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
-        throw new AppError('No files uploaded', 400);
-      }
+      const userId = req.user!.userId;
+      const { listingId, fileKey } = req.body;
 
-      const folder = req.body.folder || 'general';
-      const results = await uploadService.uploadMultipleImages(req.files, folder);
+      const photo = await uploadService.confirmUpload(userId, listingId, fileKey);
 
-      res.json({
+      res.status(201).json({
         success: true,
-        message: 'Files uploaded successfully',
-        data: { urls: results.map((r) => r.url) },
+        message: 'Photo upload confirmed',
+        data: { photo },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** DELETE /api/v1/upload/photo/:photoId */
+  async deletePhoto(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const photoId = req.params['photoId'] as string;
+
+      await uploadService.deletePhoto(userId, photoId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Photo deleted successfully',
+        data: null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** GET /api/v1/upload/listing/:listingId/photos */
+  async getListingPhotos(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const listingId = req.params['listingId'] as string;
+
+      const photos = await uploadService.getListingPhotos(listingId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Photos retrieved successfully',
+        data: { photos },
       });
     } catch (error) {
       next(error);

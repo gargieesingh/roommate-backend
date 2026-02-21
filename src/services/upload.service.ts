@@ -1,111 +1,167 @@
-import { AppError } from '../utils/errors';
+import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { randomUUID } from 'crypto';
+import prisma from '../config/database';
+import { r2Client } from '../config/r2';
 import { env } from '../config/env';
+import logger from '../config/logger';
+import { AppError, createForbiddenError, createNotFoundError } from '../utils/errors';
 
-// This service provides a flexible upload implementation
-// By default, it returns mock URLs for development
-// In production, integrate with Cloudinary or AWS S3
+/** Allowed MIME types and their file extensions */
+const CONTENT_TYPE_EXTENSION: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
 
-export interface UploadResult {
-  url: string;
-  publicId?: string;
-}
+const MAX_PHOTOS = 6;
 
 export class UploadService {
-  private readonly maxFileSize = 5 * 1024 * 1024; // 5MB
-  private readonly allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-
   /**
-   * Validate file before upload
+   * Generate a presigned PUT URL so the client can upload directly to R2.
+   * Never touches file bytes — only produces a short-lived signed URL.
    */
-  validateFile(file: Express.Multer.File): void {
-    // Check file size
-    if (file.size > this.maxFileSize) {
-      throw new AppError('File size must be less than 5MB', 400);
+  async generatePresignedUrl(
+    userId: string,
+    listingId: string,
+    filename: string,
+    contentType: string
+  ): Promise<{ presignedUrl: string; fileKey: string; publicUrl: string }> {
+    // Verify listing exists and belongs to this user
+    const listing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { userId: true },
+    });
+
+    if (!listing) {
+      throw createNotFoundError('Listing');
     }
 
-    // Check file type
-    if (!this.allowedMimeTypes.includes(file.mimetype)) {
-      throw new AppError('Only JPEG, PNG, and WebP images are allowed', 400);
+    if (listing.userId !== userId) {
+      throw createForbiddenError('You do not have permission to upload photos for this listing');
     }
+
+    // Check existing photo count
+    const photoCount = await prisma.listingPhoto.count({
+      where: { listingId },
+    });
+
+    if (photoCount >= MAX_PHOTOS) {
+      throw new AppError(`Maximum ${MAX_PHOTOS} photos allowed per listing`, 400);
+    }
+
+    // Validate content type
+    const extension = CONTENT_TYPE_EXTENSION[contentType];
+    if (!extension) {
+      throw new AppError('contentType must be image/jpeg, image/png, or image/webp', 400);
+    }
+
+    // Build the R2 object key
+    const fileKey = `listings/${listingId}/${randomUUID()}.${extension}`;
+
+    // Generate presigned PUT URL (5 minute expiry)
+    const command = new PutObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: fileKey,
+      ContentType: contentType,
+    });
+
+    const presignedUrl = await getSignedUrl(r2Client, command, { expiresIn: 300 });
+    const publicUrl = `${env.R2_PUBLIC_URL}/${fileKey}`;
+
+    logger.info(`Generated presigned URL for listing ${listingId} by user ${userId}`);
+
+    return { presignedUrl, fileKey, publicUrl };
   }
 
   /**
-   * Upload single image
-   * TODO: Integrate with Cloudinary or AWS S3 in production
+   * Confirm a successful client-side upload by saving the ListingPhoto record.
    */
-  async uploadImage(file: Express.Multer.File, folder: string = 'general'): Promise<UploadResult> {
-    this.validateFile(file);
-
-    // For development: return a mock URL
-    // In production, replace this with actual Cloudinary/S3 upload
-    const mockUrl = `https://storage.example.com/${folder}/${Date.now()}-${file.originalname}`;
-
-    // Example Cloudinary integration (commented out):
-    /*
-    const cloudinary = require('cloudinary').v2;
-    cloudinary.config({
-      cloud_name: env.CLOUDINARY_CLOUD_NAME,
-      api_key: env.CLOUDINARY_API_KEY,
-      api_secret: env.CLOUDINARY_API_SECRET,
+  async confirmUpload(userId: string, listingId: string, fileKey: string) {
+    // Verify listing exists and belongs to this user
+    const listing = await prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { userId: true },
     });
 
-    const result = await new Promise<UploadResult>((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: `roommates/${folder}`,
-          resource_type: 'image',
+    if (!listing) {
+      throw createNotFoundError('Listing');
+    }
+
+    if (listing.userId !== userId) {
+      throw createForbiddenError('You do not have permission to confirm uploads for this listing');
+    }
+
+    // Re-check photo count (race condition protection)
+    const photoCount = await prisma.listingPhoto.count({
+      where: { listingId },
+    });
+
+    if (photoCount >= MAX_PHOTOS) {
+      throw new AppError(`Maximum ${MAX_PHOTOS} photos allowed per listing`, 400);
+    }
+
+    const publicUrl = `${env.R2_PUBLIC_URL}/${fileKey}`;
+
+    const photo = await prisma.listingPhoto.create({
+      data: {
+        listingId,
+        fileKey,
+        url: publicUrl,
+        order: photoCount, // append at end
+      },
+    });
+
+    logger.info(`Photo confirmed for listing ${listingId}: ${photo.id}`);
+
+    return photo;
+  }
+
+  /**
+   * Delete a photo from both R2 and the database.
+   */
+  async deletePhoto(userId: string, photoId: string) {
+    // Find photo and its parent listing
+    const photo = await prisma.listingPhoto.findUnique({
+      where: { id: photoId },
+      include: {
+        listing: {
+          select: { userId: true },
         },
-        (error: any, result: any) => {
-          if (error) reject(error);
-          else resolve({ url: result.secure_url, publicId: result.public_id });
-        }
-      );
-      uploadStream.end(file.buffer);
+      },
     });
 
-    return result;
-    */
-
-    return { url: mockUrl };
-  }
-
-  /**
-   * Upload multiple images
-   */
-  async uploadMultipleImages(files: Express.Multer.File[], folder: string = 'general'): Promise<UploadResult[]> {
-    if (files.length > 5) {
-      throw new AppError('Maximum 5 images allowed', 400);
+    if (!photo) {
+      throw createNotFoundError('Photo');
     }
 
-    const uploadPromises = files.map((file) => this.uploadImage(file, folder));
-    const results = await Promise.all(uploadPromises);
+    if (photo.listing.userId !== userId) {
+      throw createForbiddenError('You do not have permission to delete this photo');
+    }
 
-    return results;
+    // Delete from R2
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: photo.fileKey,
+    });
+
+    await r2Client.send(deleteCommand);
+
+    // Delete from database
+    await prisma.listingPhoto.delete({ where: { id: photoId } });
+
+    logger.info(`Photo deleted: ${photoId} by user ${userId}`);
+
+    return { success: true };
   }
 
   /**
-   * Delete image
-   * TODO: Implement deletion for Cloudinary/S3
+   * Get all photos for a listing, ordered by their display order.
    */
-  async deleteImage(url: string): Promise<void> {
-    // For development: no-op
-    // In production, implement actual deletion
-
-    // Example Cloudinary deletion (commented out):
-    /*
-    const cloudinary = require('cloudinary').v2;
-    const publicId = this.extractPublicIdFromUrl(url);
-    await cloudinary.uploader.destroy(publicId);
-    */
-  }
-
-  /**
-   * Extract public ID from Cloudinary URL
-   */
-  private extractPublicIdFromUrl(url: string): string {
-    // Extract public_id from Cloudinary URL
-    const parts = url.split('/');
-    const filename = parts[parts.length - 1];
-    return filename.split('.')[0];
+  async getListingPhotos(listingId: string) {
+    return prisma.listingPhoto.findMany({
+      where: { listingId },
+      orderBy: { order: 'asc' },
+    });
   }
 }

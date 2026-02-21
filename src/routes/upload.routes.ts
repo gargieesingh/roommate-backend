@@ -1,36 +1,43 @@
 import { Router } from 'express';
-import multer from 'multer';
 import { UploadController } from '../controllers/upload.controller';
 import { authenticate } from '../middleware/auth.middleware';
+import { validate } from '../middleware/validate.middleware';
+import { presignedUrlSchema, confirmUploadSchema } from '../validators/upload.validator';
 
 const router = Router();
 const uploadController = new UploadController();
 
-// Configure multer for memory storage
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-  },
-});
+// ─── Authenticated Routes ───────────────────────────────────────
 
-// ─── All routes require authentication ─────────────────────
-
-/** POST /api/v1/upload - Upload single image */
+/** POST /api/v1/upload/presigned-url — Generate a presigned PUT URL for direct R2 upload */
 router.post(
-  '/',
+  '/presigned-url',
   authenticate,
-  upload.single('file'),
-  uploadController.uploadSingle.bind(uploadController)
+  validate(presignedUrlSchema),
+  uploadController.generatePresignedUrl.bind(uploadController)
 );
 
-/** POST /api/v1/upload/multiple - Upload multiple images (max 5) */
+/** POST /api/v1/upload/confirm — Confirm a completed upload by saving the DB record */
 router.post(
-  '/multiple',
+  '/confirm',
   authenticate,
-  upload.array('files', 5),
-  uploadController.uploadMultiple.bind(uploadController)
+  validate(confirmUploadSchema),
+  uploadController.confirmUpload.bind(uploadController)
+);
+
+/** DELETE /api/v1/upload/photo/:photoId — Delete a photo from R2 and the database */
+router.delete(
+  '/photo/:photoId',
+  authenticate,
+  uploadController.deletePhoto.bind(uploadController)
+);
+
+// ─── Public Routes ──────────────────────────────────────────────
+
+/** GET /api/v1/upload/listing/:listingId/photos — Get all photos for a listing */
+router.get(
+  '/listing/:listingId/photos',
+  uploadController.getListingPhotos.bind(uploadController)
 );
 
 export default router;
