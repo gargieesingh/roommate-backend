@@ -20,6 +20,7 @@ app.use(
 // ─── Body parsing ───────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
 // ─── Passport initialization ────────────────────────────────────
 import passport from 'passport';

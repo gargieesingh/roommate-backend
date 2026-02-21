@@ -1,7 +1,6 @@
 /// <reference path="../types/express.d.ts" />
 import { Request, Response, NextFunction } from 'express';
 import { ListingService } from '../services/listing.service';
-import { UploadService } from '../services/upload.service';
 
 const listingService = new ListingService();
 
@@ -9,22 +8,7 @@ export class ListingController {
   /** POST /api/v1/listings */
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      console.log('📝 Creating listing request received');
-      console.log('Files:', req.files);
-      console.log('Body:', req.body);
-      
       const userId = req.user!.userId;
-      
-      // Handle file uploads if any
-      const files = req.files as Express.Multer.File[];
-      const uploadedPhotoUrls: string[] = [];
-      
-      if (files && files.length > 0) {
-        const uploadService = new UploadService();
-        const uploadResults = await uploadService.uploadMultipleImages(files, 'listings');
-        uploadedPhotoUrls.push(...uploadResults.map(r => r.url));
-      }
-      
       const rawBody = req.body;
 
       // Maps for frontend -> backend enums
@@ -63,8 +47,8 @@ export class ListingController {
         availableFrom: new Date(rawBody.availableFrom),
         availableUntil: rawBody.availableUntil ? new Date(rawBody.availableUntil) : undefined,
         
-        // Photos
-        photos: uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls : (rawBody.photos || []),
+        // Photos - provided as body field (legacy scalar array, managed separately via ListingPhoto model)
+        photos: rawBody.photos || [],
       };
 
       const listing = await listingService.createListing(userId, data);
