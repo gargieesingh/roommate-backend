@@ -243,7 +243,9 @@ export class AuthService {
       select: {
         ...USER_SELECT,
         _count: {
-          select: { listings: true },
+          select: {
+            listings: { where: { isActive: true } },
+          },
         },
       },
     });
