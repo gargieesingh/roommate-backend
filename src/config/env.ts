@@ -24,6 +24,12 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
   GOOGLE_CALLBACK_URL: z.string().default('http://localhost:3000/api/v1/auth/google/callback'),
   FRONTEND_URL: z.string().default('http://localhost:8080'),
+  // Cloudflare R2
+  R2_ACCOUNT_ID: z.string().min(1, 'R2_ACCOUNT_ID is required'),
+  R2_ACCESS_KEY_ID: z.string().min(1, 'R2_ACCESS_KEY_ID is required'),
+  R2_SECRET_ACCESS_KEY: z.string().min(1, 'R2_SECRET_ACCESS_KEY is required'),
+  R2_BUCKET_NAME: z.string().default('roommate-photos'),
+  R2_PUBLIC_URL: z.string().min(1, 'R2_PUBLIC_URL is required'),
 });
 
 const parsed = envSchema.safeParse(process.env);
