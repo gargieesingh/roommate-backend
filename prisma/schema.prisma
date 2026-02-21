@@ -252,14 +252,31 @@ model Listing {
   updatedAt DateTime @updatedAt @map("updated_at")
   
   // Relations (placeholders for future phases)
-  conversations Conversation[]
-  favorites     Favorite[]
-  reports       Report[]
+  conversations  Conversation[]
+  favorites      Favorite[]
+  reports        Report[]
+  listingPhotos  ListingPhoto[]
   
   @@index([city, rent, isActive])
   @@index([type, city, createdAt])
   @@index([userId])
   @@map("listings")
+}
+
+// ─── Listing Photo Model ────────────────────────────────────────
+
+model ListingPhoto {
+  id        String   @id @default(uuid())
+  listingId String   @map("listing_id")
+  url       String   // CDN public URL
+  fileKey   String   @map("file_key")  // R2 object key e.g. "listings/uuid/filename.webp"
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_photos")
 }
 
 // ─── Messaging System Models ───────────────────────────────────
