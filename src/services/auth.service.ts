@@ -240,7 +240,12 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: USER_SELECT,
+      select: {
+        ...USER_SELECT,
+        _count: {
+          select: { listings: true },
+        },
+      },
     });
 
     if (!user) {
@@ -280,9 +285,21 @@ export class AuthService {
       additionalPhotos?: string[];
     }
   ) {
+    // Normalize enum fields to UPPER_CASE — Prisma enums are uppercase but the
+    // frontend sends lowercase/mixed-case values (e.g. "female" → "FEMALE")
+    const normalized = {
+      ...data,
+      ...(data.gender && { gender: data.gender.toString().toUpperCase() as Gender }),
+      ...(data.smokingPreference && { smokingPreference: data.smokingPreference.toString().toUpperCase() as SmokingPreference }),
+      ...(data.drinkingPreference && { drinkingPreference: data.drinkingPreference.toString().toUpperCase() as DrinkingPreference }),
+      ...(data.petsPreference && { petsPreference: data.petsPreference.toString().toUpperCase() as PetsPreference }),
+      ...(data.sleepSchedule && { sleepSchedule: data.sleepSchedule.toString().toUpperCase() as SleepSchedule }),
+      ...(data.cleanliness && { cleanliness: data.cleanliness.toString().toUpperCase() as Cleanliness }),
+    };
+
     const user = await prisma.user.update({
       where: { id: userId },
-      data,
+      data: normalized,
       select: USER_SELECT,
     });
 
