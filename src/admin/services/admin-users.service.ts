@@ -396,13 +396,12 @@ export class AdminUsersService {
     }
 
     /**
-     * Delete user (soft delete by setting isActive to false)
+     * Delete user permanently
      */
     async deleteUser(userId: string, adminId: string, ipAddress?: string) {
-        // Soft delete
-        const user = await prisma.user.update({
+        // Hard delete
+        const user = await prisma.user.delete({
             where: { id: userId },
-            data: { isActive: false },
         });
 
         await auditLogService.log({
@@ -423,10 +422,11 @@ export class AdminUsersService {
 
         let updateData: any = {};
         let actionType = '';
+        let isDelete = false;
 
         switch (action) {
             case 'delete':
-                updateData = { isActive: false };
+                isDelete = true;
                 actionType = 'BULK_DELETE_USERS';
                 break;
             case 'ban':
@@ -449,10 +449,16 @@ export class AdminUsersService {
                 throw new Error('Invalid bulk action');
         }
 
-        await prisma.user.updateMany({
-            where: { id: { in: userIds } },
-            data: updateData,
-        });
+        if (isDelete) {
+            await prisma.user.deleteMany({
+                where: { id: { in: userIds } },
+            });
+        } else {
+            await prisma.user.updateMany({
+                where: { id: { in: userIds } },
+                data: updateData,
+            });
+        }
 
         await auditLogService.log({
             adminId,
