@@ -3,20 +3,30 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 interface SearchUsersFilters {
-  budgetMin?: number;
-  budgetMax?: number;
-  ageMin?: number;
-  ageMax?: number;
+  // Support both naming conventions from the frontend
+  budgetMin?: number | string;
+  budgetMax?: number | string;
+  minBudget?: number | string;
+  maxBudget?: number | string;
+  ageMin?: number | string;
+  ageMax?: number | string;
+  minAge?: number | string;
+  maxAge?: number | string;
   gender?: string;
   city?: string;
-  occupation?: string;
+  location?: string;
+  occupation?: string | string[];
   cleanliness?: string;
   smokingPreference?: string;
+  smoking?: string;
   drinkingPreference?: string;
   petsPreference?: string;
+  pets?: string;
   sleepSchedule?: string;
-  page?: number;
-  limit?: number;
+  verifiedOnly?: boolean | string;
+  page?: number | string;
+  limit?: number | string;
+  [key: string]: any;
 }
 
 export class UserService {
@@ -24,30 +34,27 @@ export class UserService {
    * Search users with filters for roommate discovery
    */
   async searchUsers(filters: SearchUsersFilters) {
-    const {
-      budgetMin,
-      budgetMax,
-      ageMin,
-      ageMax,
-      gender,
-      city,
-      occupation,
-      cleanliness,
-      smokingPreference,
-      drinkingPreference,
-      petsPreference,
-      sleepSchedule,
-      page = 1,
-      limit = 20,
-    } = filters;
+    // Support both naming conventions (minBudget / budgetMin, etc.)
+    const budgetMin = filters.budgetMin ?? filters.minBudget;
+    const budgetMax = filters.budgetMax ?? filters.maxBudget;
+    const ageMin = filters.ageMin ?? filters.minAge;
+    const ageMax = filters.ageMax ?? filters.maxAge;
+    const gender = filters.gender;
+    const city = filters.city ?? filters.location;
+    const occupation = filters.occupation;
+    const cleanliness = filters.cleanliness;
+    const smokingPreference = filters.smokingPreference ?? filters.smoking;
+    const drinkingPreference = filters.drinkingPreference;
+    const petsPreference = filters.petsPreference ?? filters.pets;
+    const sleepSchedule = filters.sleepSchedule;
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 20;
 
-    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
-    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : (page as number);
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : (limit as number);
     const skip = (pageNum - 1) * limitNum;
     const where: any = {
       isActive: true,
-      isLooking: true,
-      emailVerified: true, // Only show verified users
     };
 
     // Budget filters
@@ -77,7 +84,13 @@ export class UserService {
       where.city = { contains: city, mode: 'insensitive' };
     }
     if (occupation) {
-      where.occupation = { contains: occupation, mode: 'insensitive' };
+      if (Array.isArray(occupation)) {
+        where.OR = (where.OR || []).concat(
+          occupation.map((occ: string) => ({ occupation: { contains: occ, mode: 'insensitive' } }))
+        );
+      } else {
+        where.occupation = { contains: occupation as string, mode: 'insensitive' };
+      }
     }
     if (cleanliness) {
       where.cleanliness = cleanliness;
