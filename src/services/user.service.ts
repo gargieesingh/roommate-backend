@@ -57,23 +57,46 @@ export class UserService {
       isActive: true,
     };
 
-    // Budget filters
-    if (budgetMin !== undefined || budgetMax !== undefined) {
-      where.AND = where.AND || [];
-      if (budgetMin !== undefined) {
-        where.AND.push({ budgetMax: { gte: budgetMin } });
+    // Budget filters — NULL-safe: users who haven't set budget still show up
+    //   (budgetMax >= minBudget OR budgetMax IS NULL)
+    //   (budgetMin <= maxBudget OR budgetMin IS NULL)
+    if (budgetMin !== undefined) {
+      const bMin = Number(budgetMin);
+      if (!isNaN(bMin) && bMin > 0) {  // only apply if non-trivial
+        where.AND = where.AND || [];
+        where.AND.push({
+          OR: [{ budgetMax: null }, { budgetMax: { gte: bMin } }],
+        });
       }
-      if (budgetMax !== undefined) {
-        where.AND.push({ budgetMin: { lte: budgetMax } });
+    }
+    if (budgetMax !== undefined) {
+      const bMax = Number(budgetMax);
+      if (!isNaN(bMax)) {
+        where.AND = where.AND || [];
+        where.AND.push({
+          OR: [{ budgetMin: null }, { budgetMin: { lte: bMax } }],
+        });
       }
     }
 
-    // Age filters
+    // Age filters — NULL-safe: users who haven't set age still show up
     if (ageMin !== undefined) {
-      where.age = { ...where.age, gte: ageMin };
+      const aMin = Number(ageMin);
+      if (!isNaN(aMin) && aMin > 0) {  // only apply if non-trivial (> 0)
+        where.AND = where.AND || [];
+        where.AND.push({
+          OR: [{ age: null }, { age: { gte: aMin } }],
+        });
+      }
     }
     if (ageMax !== undefined) {
-      where.age = { ...where.age, lte: ageMax };
+      const aMax = Number(ageMax);
+      if (!isNaN(aMax) && aMax < 200) {  // only apply if non-trivial
+        where.AND = where.AND || [];
+        where.AND.push({
+          OR: [{ age: null }, { age: { lte: aMax } }],
+        });
+      }
     }
 
     // Exact match filters
