@@ -290,83 +290,159 @@ export class ListingService {
   async searchListings(filters: {
     city?: string;
     type?: ListingType;
-    minRent?: number;
-    maxRent?: number;
-    propertyType?: PropertyType;
+    minRent?: number | string;
+    maxRent?: number | string;
+    propertyType?: PropertyType | string;
+    roomType?: string | string[];
     furnishedStatus?: FurnishedStatus;
-    genderPreference?: GenderPreference;
+    genderPreference?: GenderPreference | string;
     smokingAllowed?: boolean;
     petsAllowed?: boolean;
+    amenities?: string | string[];
+    leaseLength?: number | string;
     availableFrom?: Date;
-    sortBy?: 'newest' | 'price_low' | 'price_high' | 'popular';
-    page?: number;
-    limit?: number;
+    verifiedOnly?: boolean | string;
+    sortBy?: string;
+    page?: number | string;
+    limit?: number | string;
   }) {
+    logger.info(`searchListings called with filters: ${JSON.stringify(filters)}`);
+
     const {
       city,
       type,
       minRent,
       maxRent,
       propertyType,
+      roomType,
       furnishedStatus,
       genderPreference,
       smokingAllowed,
       petsAllowed,
+      amenities,
+      leaseLength,
       availableFrom,
+      verifiedOnly,
       sortBy = 'newest',
       page = 1,
       limit = 20,
     } = filters;
 
-    // Build where clause
-    const where: any = {
-      isActive: true,
+    // ── Pagination ──────────────────────────────────────────────────────────
+    const pageNum = typeof page === 'string' ? parseInt(page, 10) : (page as number);
+    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : (limit as number);
+    const skip = (pageNum - 1) * limitNum;
+
+    // ── Room-type → PropertyType map ─────────────────────────────────────────
+    const roomTypeEnumMap: Record<string, PropertyType> = {
+      private: 'PRIVATE_ROOM',
+      shared: 'SHARED_ROOM',
+      entire: 'APARTMENT',
+      PRIVATE_ROOM: 'PRIVATE_ROOM',
+      SHARED_ROOM: 'SHARED_ROOM',
+      APARTMENT: 'APARTMENT',
+      HOUSE: 'HOUSE',
+      STUDIO: 'STUDIO',
     };
 
-    if (city) where.city = { contains: city, mode: 'insensitive' };
+    // ── Collect all AND conditions ────────────────────────────────────────────
+    const andConditions: any[] = [{ isActive: true }];
 
-    if (type) where.type = type;
-    if (propertyType) where.propertyType = propertyType;
-    if (furnishedStatus) where.furnishedStatus = furnishedStatus;
-    if (genderPreference) where.genderPreference = genderPreference;
-    if (smokingAllowed !== undefined) where.smokingAllowed = smokingAllowed;
-    if (petsAllowed !== undefined) where.petsAllowed = petsAllowed;
+    // City
+    if (city) andConditions.push({ city: { contains: city, mode: 'insensitive' } });
 
-    // Rent range filter
-    if (minRent || maxRent) {
-      where.rent = {};
-      // Convert to numbers if they're strings
-      if (minRent) where.rent.gte = typeof minRent === 'string' ? parseInt(minRent, 10) : minRent;
-      if (maxRent) where.rent.lte = typeof maxRent === 'string' ? parseInt(maxRent, 10) : maxRent;
+    // Listing type
+    if (type) andConditions.push({ type });
+
+    // Furnished status
+    if (furnishedStatus) andConditions.push({ furnishedStatus });
+
+    // ── Room type: match on EITHER propertyType enum OR roomType string ───────
+    if (roomType || propertyType) {
+      const requested = roomType
+        ? (Array.isArray(roomType) ? roomType : String(roomType).split(','))
+        : [String(propertyType)];
+
+      const enumVals: PropertyType[] = requested
+        .map((t) => roomTypeEnumMap[t.trim()])
+        .filter(Boolean) as PropertyType[];
+
+      const strVals: string[] = requested.map((t) => t.trim().toLowerCase());
+
+      const roomTypeOr: any[] = [];
+      if (enumVals.length) roomTypeOr.push({ propertyType: { in: enumVals } });
+      if (strVals.length) roomTypeOr.push({ roomType: { in: strVals } });
+
+      if (roomTypeOr.length) andConditions.push({ OR: roomTypeOr });
     }
 
-    // Available from filter
-    if (availableFrom) {
-      where.availableFrom = { lte: availableFrom };
+    // ── Gender preference ────────────────────────────────────────────────────
+    if (genderPreference) {
+      const gp = String(genderPreference).toUpperCase();
+      if (gp !== 'ANY') andConditions.push({ genderPreference: gp });
     }
 
-    // Sorting
-    let orderBy: any = { createdAt: 'desc' }; // Default: newest
+    // ── Booleans ─────────────────────────────────────────────────────────────
+    if (smokingAllowed !== undefined) andConditions.push({ smokingAllowed });
+    if (petsAllowed !== undefined) andConditions.push({ petsAllowed });
+
+    // ── Rent range ────────────────────────────────────────────────────────────
+    const minRentNum = minRent !== undefined && minRent !== '' ? Number(minRent) : undefined;
+    const maxRentNum = maxRent !== undefined && maxRent !== '' ? Number(maxRent) : undefined;
+    if (minRentNum !== undefined && minRentNum > 0) {
+      andConditions.push({ rent: { gte: minRentNum } });
+    }
+    if (maxRentNum !== undefined && maxRentNum > 0 && maxRentNum < 1_000_000) {
+      andConditions.push({ rent: { lte: maxRentNum } });
+    }
+
+    // ── Lease length ──────────────────────────────────────────────────────────
+    if (leaseLength !== undefined && leaseLength !== '') {
+      const leaseLengthNum = Number(leaseLength);
+      if (!isNaN(leaseLengthNum) && leaseLengthNum > 0) {
+        andConditions.push({ leaseLength: { lte: leaseLengthNum } });
+      }
+    }
+
+    // ── Amenities (hasSome — listing must contain at least one of the requested) ─
+    if (amenities) {
+      const amenityList = Array.isArray(amenities)
+        ? amenities.flatMap((a) => String(a).split(','))
+        : String(amenities).split(',');
+      const trimmed = amenityList.map((a) => a.trim()).filter(Boolean);
+      if (trimmed.length > 0) {
+        andConditions.push({ amenities: { hasSome: trimmed } });
+      }
+    }
+
+    // ── Available from ────────────────────────────────────────────────────────
+    if (availableFrom) andConditions.push({ availableFrom: { lte: availableFrom } });
+
+    // ── Verified only ─────────────────────────────────────────────────────────
+    if (verifiedOnly === true || verifiedOnly === 'true') {
+      andConditions.push({ user: { phoneVerified: true } });
+    }
+
+    // ── Sorting ────────────────────────────────────────────────────────────────
+    let orderBy: any = { createdAt: 'desc' };
     if (sortBy === 'price_low') orderBy = { rent: 'asc' };
     if (sortBy === 'price_high') orderBy = { rent: 'desc' };
     if (sortBy === 'popular') orderBy = { viewCount: 'desc' };
 
-    // Pagination
-    const pageNum = typeof page === 'string' ? parseInt(page, 10) : page;
-    const limitNum = typeof limit === 'string' ? parseInt(limit, 10) : limit;
-    const skip = (pageNum - 1) * limitNum;
+    // ── Build final where from AND conditions ─────────────────────────────────
+    const where = andConditions.length === 1
+      ? andConditions[0]
+      : { AND: andConditions };
 
-    // Execute query
+    logger.info(`Prisma where clause: ${JSON.stringify(where)}`);
+
+    // ── Execute ────────────────────────────────────────────────────────────────
     const [listings, total] = await Promise.all([
-      prisma.listing.findMany({
-        where,
-        select: LISTING_SELECT,
-        orderBy,
-        skip,
-        take: limitNum,
-      }),
+      prisma.listing.findMany({ where, select: LISTING_SELECT, orderBy, skip, take: limitNum }),
       prisma.listing.count({ where }),
     ]);
+
+    logger.info(`searchListings result: ${total} listings found`);
 
     return {
       listings,
@@ -379,3 +455,4 @@ export class ListingService {
     };
   }
 }
+
