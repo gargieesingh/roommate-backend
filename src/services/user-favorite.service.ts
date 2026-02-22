@@ -74,10 +74,10 @@ export class UserFavoriteService {
       },
     });
 
-    return rows.map((row) => {
+    return rows.map((row: any) => {
       const u = row.favoriteUser;
-      const ratings = u.reviewsReceived.map((r) => r.rating);
-      const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+      const ratings = u.reviewsReceived.map((r: any) => r.rating);
+      const avgRating = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
       const { reviewsReceived, ...userData } = u;
       return {
         ...userData,
