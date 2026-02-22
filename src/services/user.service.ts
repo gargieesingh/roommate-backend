@@ -24,6 +24,7 @@ interface SearchUsersFilters {
   pets?: string;
   sleepSchedule?: string;
   verifiedOnly?: boolean | string;
+  excludeId?: string;  // exclude current user from results
   page?: number | string;
   limit?: number | string;
   [key: string]: any;
@@ -55,6 +56,7 @@ export class UserService {
     const skip = (pageNum - 1) * limitNum;
     const where: any = {
       isActive: true,
+      ...(filters.excludeId ? { id: { not: filters.excludeId } } : {}),
     };
 
     // Budget filters — NULL-safe: users who haven't set budget still show up

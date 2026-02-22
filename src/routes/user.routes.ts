@@ -21,6 +21,16 @@ router.get(
   userController.search.bind(userController)
 );
 
+// ─── Protected routes (require valid JWT) ───────────────────
+
+/** GET /api/v1/users/favorites - Get current user's favorited users */
+// NOTE: must be registered BEFORE /:id to avoid "favorites" being treated as an ID
+router.get(
+  '/favorites',
+  authenticate,
+  userController.getFavorites.bind(userController)
+);
+
 /** GET /api/v1/users/:id - Get public user profile */
 router.get(
   '/:id',
@@ -35,7 +45,12 @@ router.get(
   userController.getReviews.bind(userController)
 );
 
-// ─── Protected routes (require valid JWT) ───────────────────
+/** GET /api/v1/users/:id/favorite - Check if current user has favorited this user */
+router.get(
+  '/:id/favorite',
+  authenticate,
+  userController.checkFavorite.bind(userController)
+);
 
 /** POST /api/v1/users/:id/reviews - Create review for a user */
 router.post(
@@ -43,6 +58,13 @@ router.post(
   authenticate,
   validate(createReviewSchema),
   userController.createReview.bind(userController)
+);
+
+/** POST /api/v1/users/:id/favorite - Toggle favorite a user */
+router.post(
+  '/:id/favorite',
+  authenticate,
+  userController.toggleFavorite.bind(userController)
 );
 
 export default router;
