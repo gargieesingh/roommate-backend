@@ -137,6 +137,8 @@ model User {
   reportsMade        Report[]       @relation("ReportsMade")
   reportsReceived    Report[]       @relation("ReportsReceived")
   favorites          Favorite[]
+  userFavorites      UserFavorite[] @relation("FavoritedBy")     // users this person has favorited
+  favoritedByUsers   UserFavorite[] @relation("FavoritedUsers")  // users who favorited this person
   teamMembers        TeamMember[]
   reviewsGiven       Review[]       @relation("ReviewsGiven")
   reviewsReceived    Review[]       @relation("ReviewsReceived")
@@ -407,6 +409,23 @@ model Favorite {
   @@index([userId])
   @@index([listingId])
   @@map("favorites")
+}
+
+// ─── User Favorite (User-to-User) Model ─────────────────────
+
+model UserFavorite {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")           // who favorited
+  favoriteUserId String   @map("favorite_user_id")  // who was favorited
+  user           User     @relation("FavoritedBy", fields: [userId], references: [id], onDelete: Cascade)
+  favoriteUser   User     @relation("FavoritedUsers", fields: [favoriteUserId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, favoriteUserId])
+  @@index([userId])
+  @@index([favoriteUserId])
+  @@map("user_favorites")
 }
 
 // ─── Team System Models ─────────────────────────────────────

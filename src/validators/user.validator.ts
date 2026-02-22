@@ -24,6 +24,7 @@ export const searchUsersSchema = z.object({
     pets: z.string().optional(),
     sleepSchedule: z.string().optional(),
     verifiedOnly: z.string().optional(),
+    excludeId: z.string().uuid().optional(),
     page: z.string().regex(/^\d+$/).transform(Number).optional(),
     limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   }),
