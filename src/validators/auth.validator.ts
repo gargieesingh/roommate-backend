@@ -82,8 +82,11 @@ export const updateProfileSchema = z.object({
       languages: z.array(z.string().min(1)).max(10, 'Maximum 10 languages allowed').optional(),
 
       // Photos
-      profilePhoto: z.string().min(1, 'Profile photo cannot be empty').optional(),
+      profilePhoto: z.string().optional(),
       additionalPhotos: z.array(z.string().url('Each photo must be a valid URL')).max(5, 'Maximum 5 additional photos allowed').optional(),
+
+      // Status
+      isLooking: z.boolean().optional(),
     })
     .refine(
       (data) => {

@@ -285,6 +285,7 @@ export class AuthService {
       languages?: string[];
       profilePhoto?: string;
       additionalPhotos?: string[];
+      isLooking?: boolean;
     }
   ) {
     // Normalize enum fields to UPPER_CASE — Prisma enums are uppercase but the
