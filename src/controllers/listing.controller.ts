@@ -29,12 +29,12 @@ export class ListingController {
         longitude: rawBody.longitude ? Number(rawBody.longitude) : undefined,
         ageRangeMin: rawBody.ageRangeMin ? Number(rawBody.ageRangeMin) : undefined,
         ageRangeMax: rawBody.ageRangeMax ? Number(rawBody.ageRangeMax) : undefined,
-        
+
         // Boolean fields - Handle both boolean (from validator) and string (fallback)
         utilitiesIncluded: rawBody.utilitiesIncluded === true || rawBody.utilitiesIncluded === 'true',
         smokingAllowed: rawBody.smokingAllowed === true || rawBody.smokingAllowed === 'true',
         petsAllowed: rawBody.petsAllowed === true || rawBody.petsAllowed === 'true',
-        
+
         // Map roomType to propertyType if not present
         propertyType: rawBody.propertyType || propertyTypeMap[rawBody.roomType] || undefined,
 
@@ -42,11 +42,11 @@ export class ListingController {
         amenities: Array.isArray(rawBody.amenities) ? rawBody.amenities : [],
         occupationPreference: Array.isArray(rawBody.occupationPreference) ? rawBody.occupationPreference : [],
         houseRules: Array.isArray(rawBody.houseRules) ? rawBody.houseRules : [],
-        
+
         // Date fields
         availableFrom: new Date(rawBody.availableFrom),
         availableUntil: rawBody.availableUntil ? new Date(rawBody.availableUntil) : undefined,
-        
+
         // Photos - provided as body field (legacy scalar array, managed separately via ListingPhoto model)
         photos: rawBody.photos || [],
       };
@@ -151,6 +151,7 @@ export class ListingController {
   /** GET /api/v1/listings/search */
   async search(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      console.log('[ListingController.search] INCOMING QUERY:', JSON.stringify(req.query));
       const filters = {
         ...req.query,
         availableFrom: req.query.availableFrom ? new Date(req.query.availableFrom as string) : undefined,
