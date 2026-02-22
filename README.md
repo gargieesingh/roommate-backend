@@ -27,6 +27,7 @@ This backend powers a complete roommate finder ecosystem where users can:
 - **Communicate**: Real-time messaging with context (listings, teams)
 - **Build Trust**: Review system for user reputation
 - **Stay Safe**: Comprehensive blocking and reporting features
+- **Admin Control**: Robust administration and moderation panel
 
 ---
 
@@ -384,6 +385,37 @@ CLOUDINARY_API_SECRET=your_secret
 - `POST /api/v1/safety/favorites/add` - Add favorite (auth)
 - `DELETE /api/v1/safety/favorites/:id` - Remove favorite (auth)
 - `GET /api/v1/safety/favorites` - Get favorites (auth)
+
+---
+
+### 10. 👑 Admin Panel & Management
+
+**Comprehensive dashboard API for platform administration**
+
+- **User Management**
+  - View all users and detailed profiles
+  - Ban, suspend, or delete accounts
+  - Manually verify phone/email
+  - Bulk actions on users
+
+- **Content Moderation**
+  - Review, flag or delete listings
+  - Hide or delete inappropriate reviews
+  - Monitor and manage teams
+  - Review and resolve user reports
+
+- **System Administration**
+  - Live system analytics and statistics
+  - Send global or targeted notifications
+  - Export system data (users, listings)
+  - Manage admin team roles and audit logs
+
+**Endpoints:**
+- `POST /api/v1/admin/auth/login` - Admin login
+- `GET /api/v1/admin/analytics/overview` - Platform statistics (admin)
+- `GET /api/v1/admin/users` - Manage users (admin)
+- `GET /api/v1/admin/listings` - Manage listings (admin)
+- `GET /api/v1/admin/reports` - Moderation queue (admin)
 
 ---
 
@@ -759,6 +791,14 @@ Content-Type: application/json
 | | POST | `/safety/favorites/add` | ✅ | Add favorite |
 | | DELETE | `/safety/favorites/:id` | ✅ | Remove favorite |
 | | GET | `/safety/favorites` | ✅ | Get favorites |
+| **Admin** | POST | `/admin/auth/login` | ❌ | Admin login |
+| | GET | `/admin/analytics/overview` | 👑 | Platform stats |
+| | GET | `/admin/users` | 👑 | List all users |
+| | POST | `/admin/users/:id/ban` | 👑 | Ban user |
+| | GET | `/admin/listings` | 👑 | List all listings |
+| | GET | `/admin/reports` | 👑 | View reports |
+| | GET | `/admin/reviews` | 👑 | Manage reviews |
+| | POST | `/admin/notifications/send` | 👑 | Global notification |
 
 ---
 
